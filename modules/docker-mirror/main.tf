@@ -107,6 +107,12 @@ resource "aws_instance" "default" {
 
   monitoring = true
 
+  metadata_options {
+    http_endpoint               = "enabled"
+    http_tokens                 = "required"
+    http_put_response_hop_limit = 1
+  }
+
   # We attach the static network device to the mirror instance.
   network_interface {
     device_index         = 0
@@ -142,7 +148,7 @@ resource "random_id" "eip" {
 resource "aws_eip" "static" {
   count = var.assign_public_ip ? 1 : 0
 
-  vpc                       = true
+  domain                    = "vpc"
   associate_with_private_ip = var.static_ip
   network_interface         = aws_network_interface.static.id
 
