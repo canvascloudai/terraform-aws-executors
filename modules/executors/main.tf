@@ -11,7 +11,15 @@ locals {
     name = var.randomize_resource_names ? "${local.prefix}executors-${random_id.security_group[0].hex}" : "${var.resource_prefix}SourcegraphExecutorsMetricsAccess"
   }
   cloudwatch_log_group = {
-    name = var.randomize_resource_names ? "${local.prefix}executors-${random_id.cloudwatch_log_group[0].hex}" : null
+    # The executor AMI's CloudWatch agent ships syslog to this group; the
+    # boot-time startup script reconfigures the agent to this name (see
+    # startup-script.sh.tpl). Multiple fleets in one account/region must not
+    # share one group, so the name carries the same prefix/random suffix as the
+    # other executor resources (IAM role, launch template, ASG, ...):
+    #   - randomize_resource_names: unique per fleet via the random suffix
+    #   - resource_prefix set:      unique per fleet via the prefix
+    #   - neither:                  the legacy fixed "executors" name (single fleet)
+    name = var.randomize_resource_names ? "${local.prefix}executors-${random_id.cloudwatch_log_group[0].hex}" : (var.resource_prefix != "" ? "${local.prefix}executors" : "executors")
   }
   iam_instance_profile = {
     name = var.randomize_resource_names ? "${local.prefix}executors-${random_id.iam_instance_profile[0].hex}" : "${local.prefix}_executors"
@@ -137,8 +145,10 @@ resource "random_id" "cloudwatch_log_group" {
 }
 
 resource "aws_cloudwatch_log_group" "syslogs" {
-  # TODO: This is hardcoded in the executor image.
-  name              = "executors"
+  # The executor AMI's CloudWatch agent defaults to a group literally named
+  # "executors". The startup script reconfigures the agent to use this name at
+  # boot, so randomized deployments get a unique, non-colliding log group.
+  name              = local.cloudwatch_log_group.name
   retention_in_days = 7
 
   tags = {
@@ -267,6 +277,7 @@ resource "aws_launch_template" "executor" {
       "EXECUTOR_USE_FIRECRACKER"            = var.use_firecracker
       "EXECUTOR_DOCKER_AUTH_CONFIG"         = var.docker_auth_config
       "PRIVATE_CA_CERTIFICATE"              = var.private_ca_cert_path != "" ? file(var.private_ca_cert_path) : ""
+      "CLOUDWATCH_LOG_GROUP_NAME"           = local.cloudwatch_log_group.name
     }
   }))
 
