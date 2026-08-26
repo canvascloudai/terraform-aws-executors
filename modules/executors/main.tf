@@ -309,8 +309,8 @@ data "aws_default_tags" "current" {}
 
 resource "aws_autoscaling_group" "autoscaler" {
   name                      = local.autoscaling_group.name
-  min_size                  = var.min_replicas
-  max_size                  = var.max_replicas
+  min_size                  = 2
+  max_size                  = 2
   vpc_zone_identifier       = [var.subnet_id]
   health_check_grace_period = 300
   enabled_metrics = [
