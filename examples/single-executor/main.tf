@@ -1,3 +1,4 @@
+# retrigger after CWM #3789
 locals {
   region            = "us-west-2"
   availability_zone = "us-west-2a"
@@ -13,5 +14,7 @@ module "executors" {
   executor_queue_name                          = "codeintel"
   executor_metrics_environment_label           = "prod"
   executor_use_firecracker                     = true
+  executor_min_replicas                        = 2
+  executor_max_replicas                        = 2
   randomize_resource_names                     = true
 }
