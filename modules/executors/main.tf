@@ -1,3 +1,4 @@
+# retrigger after CWM #3789
 locals {
   autoscaling        = var.min_replicas != var.max_replicas
   prefix             = var.resource_prefix != "" ? "${var.resource_prefix}_sourcegraph_" : "sourcegraph_"
